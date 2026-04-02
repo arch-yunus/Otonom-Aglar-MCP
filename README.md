@@ -1,5 +1,10 @@
 # 🌐 Otonom-Ağlar-MCP (Model Context Protocol)
 
+<div align="center">
+  <img src="assets/mcp_repo_banner.png" alt="Otonom-Ağlar-MCP Banner" style="width: 100%; border-radius: 10px;" />
+</div>
+<br>
+
 [![MCP Protocol](https://img.shields.io/badge/MCP-Standard_v1.0-blue?style=for-the-badge&logo=anthropic)](https://modelcontextprotocol.io)
 [![Python](https://img.shields.io/badge/Python-3.11+-FFD43B?style=for-the-badge&logo=python&logoColor=blue)](https://www.python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
