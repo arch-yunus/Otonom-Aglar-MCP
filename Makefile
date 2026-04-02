@@ -19,6 +19,8 @@ docker-down: ## Ayağa kalkan Docker ajanlarını durdurur
 run-client: ## Modül 5'teki örnek MCP İstemcisini (Host) test amacıyla çalıştırır
 	python src/05_mcp_client_example/simple_agent.py
 
+run-llm: ## Modül 6: Anthropic LLM (ReAct) kullanarak Tam Otonom Ajanı Başlatır
+	python src/06_llm_agent/autonomous_brain.py
 clean: ## Logları, önbellek (cache) ve gereksiz dosyaları temizler
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +

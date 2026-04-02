@@ -79,6 +79,10 @@ Bu eğitim atölyesi, adım adım artan bir karmaşıklık hiyerarşisine göre 
 * **Tam Bağımsızlık:** Claude Desktop uygulamasına muhtaç olmadan, kendi yazdığınız Python programıyla sunuculara (servers) programatik olarak bağlanma.
 * **Asenkron İletişim:** Sunucudaki araçları sorgulayıp, LLM adına otonom olarak tetikleyen temel ajan mimarisi kodu.
 
+### 👑 Modül 6: Tam Otonom Ajan ve ReAct Döngüsü (`/06_llm_agent`)
+* **Düşünen Ajan Beyni:** Anthropic (Claude) API'sini bir MCP İstemcisi ile birleştirip gerçek bir Agentic yapı kurma.
+* **ReAct Algoritması:** LLM'e MCP araç listesini verip "Düşün ve İnisiyatif Al (Eyleme Geç)" prensibiyle sunucu fonksiyonlarımızı otomatik olarak ve kendi iradesiyle çalıştırması. Yüzde 100 otonomi!
+
 ---
 
 ## 🔐 Güvenlik Paradigması
