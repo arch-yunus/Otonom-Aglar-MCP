@@ -1,0 +1,10 @@
+# Core MCP SDK
+mcp>=1.0.0
+
+# Optional utilities
+httpx>=0.27.0
+beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
+# Add database-specific dependencies
+# sqlite3 is built-in, but if we need a better driver:
+# sqlalchemy>=2.0.0
