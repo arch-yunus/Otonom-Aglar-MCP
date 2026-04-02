@@ -25,6 +25,13 @@ Anthropic tarafından açık kaynak olarak sunulan **Model Context Protocol (MCP
 
 ---
 
+## 🎓 MCP Eğitim Laboratuvarına Hoş Geldiniz!
+İşe nereden başlayacağınızı bilmiyorsanız, MCP'nin temel mantığını ve ajan (Agentic AI) felsefesini anlattığımız başucu dokümanımızı okumanızı şiddetle tavsiye ederiz:
+
+> 👉 **[Agentic AI ve MCP Eğitim Rehberini Oku (Başlangıç Noktası)](EGITIM_REHBERI.md)** 👈
+
+---
+
 ## 🏗️ Mimari Topoloji: MCP Nasıl Çalışır?
 
 MCP, istemci-sunucu (client-server) modeline dayalı bir mimari kullanır. Sistem tasarımı şu katmanlardan oluşur:

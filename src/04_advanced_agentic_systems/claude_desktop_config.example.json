@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "file-system-server": {
+      "command": "python",
+      "args": [
+        "c:/path/to/your/Otonom-Aglar-MCP/src/02_local_servers/file_system_server.py"
+      ]
+    },
+    "web-scraper-server": {
+      "command": "python",
+      "args": [
+        "c:/path/to/your/Otonom-Aglar-MCP/src/03_web_integrations/web_scraper.py"
+      ],
+      "env": {
+        "SCRAPE_TIMEOUT": "20",
+        "USER_AGENT": "AgenticAI/2.0"
+      }
+    },
+    "secure-sandbox": {
+      "command": "python",
+      "args": [
+        "c:/path/to/your/Otonom-Aglar-MCP/src/04_advanced_agentic_systems/secure_executor.py"
+      ],
+      "env": {
+        "MCP_SANDBOX_DIR": "C:/Users/Public/mcp_safe_zone"
+      }
+    },
+    "agent-memory": {
+      "command": "python",
+      "args": [
+        "c:/path/to/your/Otonom-Aglar-MCP/src/04_advanced_agentic_systems/memory_server.py"
+      ]
+    }
+  }
+}
