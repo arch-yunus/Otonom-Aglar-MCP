@@ -57,5 +57,6 @@ Bu repoyu klonladıktan sonra yapmanızı önerdiğimiz çalışma rotası:
 1. Modül 1'deki `hello_mcp.py`'ı inceleyin, araçların nasıl tanımlandığını görün.
 2. Kendi bilgisayarınızda bir klasör oluşturun ve Modül 2'deki `file_system_server.py`'ı kullanarak Claude'a o klasördeki karmaşık bir Python kod setini okutturun ve "Bu koddaki mimari hatalar nelerdir?" diye sorun. Hızına şaşıracaksınız.
 3. Modül 4'teki `claude_desktop_config.example.json` örneğindeki gibi **aynı anda birden fazla Server'ı** Claude'a bağlayıp, ajanın kendi kendine bir siteden veri çekip, sonra gelip sizin veritabanınıza (SQLite) yazdığını kendi gözlerinizle görün.
+4. Son olarak, **Modül 5**'te yer alan `simple_agent.py` dosyasını çalıştırarak (`make run-client`) Claude Desktop'a hiç ihtiyaç duymadan, kendi yazdığınız saf bir Python botunun bir MCP sunucusuna nasıl bağlandığını analiz edin. Kendi "Host"unuzu (Ajan Beynini) yazmanın temelleri buradadır.
 
 *İşte tam da bu anda, yapay zekanın sadece metin yazmadığına, dünyayı değiştirebildiğine ikna olacaksınız.*

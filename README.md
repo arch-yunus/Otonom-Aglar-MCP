@@ -75,6 +75,10 @@ Bu eğitim atölyesi, adım adım artan bir karmaşıklık hiyerarşisine göre 
 * **Çoklu Sunucu Orkestrasyonu:** Claude Desktop yapılandırma dosyasında (`claude_desktop_config.json`) aynı anda 3-4 farklı MCP sunucusunu çalıştırarak ajanın yetenek ağını genişletme.
 * **Durum (State) Yönetimi:** Otonom işlemler uzun sürdüğünde işlemlerin asenkron yönetimi ve loglanması.
 
+### 📓 Modül 5: Kendi İstemcinizi (Host Client) Yazmak (`/05_mcp_client_example`)
+* **Tam Bağımsızlık:** Claude Desktop uygulamasına muhtaç olmadan, kendi yazdığınız Python programıyla sunuculara (servers) programatik olarak bağlanma.
+* **Asenkron İletişim:** Sunucudaki araçları sorgulayıp, LLM adına otonom olarak tetikleyen temel ajan mimarisi kodu.
+
 ---
 
 ## 🔐 Güvenlik Paradigması
