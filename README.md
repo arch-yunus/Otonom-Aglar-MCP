@@ -86,6 +86,37 @@ Otonom ajanlar tasarlarken en kritik nokta güvenliktir. Bu repodaki projelerde 
 
 ---
 
+## 🌟 Gerçek Dünya Kullanım Senaryoları (Use Cases)
+
+MCP'nin sadece teoriden ibaret olmadığını göstermek için bu repodaki modülleri birleştirerek neler yapabileceğinize dair bazı mimari vizyonlar:
+
+1. **Otonom Finansal Analist (Modül 2 + Modül 3):**
+   - Web Scraper sunucumuz şirketlerin web sitelerine bağlanıp aylık raporları okur.
+   - LLM (Ajan) bu haberi analiz edip yapılandırılmış bir JSON verisi oluşturur.
+   - SQLite sunucusunu kullanarak bu analiz sonucunu bilgisayarınızdaki `yatirim_analizi.db` dosyasına kaydeder.
+   - Bütün bu süreç, siz Claude'a sadece "Bana Apple'ın son raporunu analiz edip DB'ye kaydet" dediğinizde *tek bir prompt ile* zincirleme olarak gerçekleşir.
+
+2. **Kendi Kendine Derlenen Yazılım Takımı (Modül 3 + Modül 4):**
+   - GitHub Yöneticisi sunucusu repodaki açık sorunları (Issues) okur ("Bug: Login butonu çalışmıyor").
+   - Kodu bilgisayarınıza çeker. Dosya okuyucusu hatayı bulur.
+   - Secure Sandbox içinde sadece o modülü (`/src/auth`) izole şekilde değiştirip LLM ortamında kodlar.
+   - Hafıza (Memory) Sunucusu, LLM işlemler arası resetlense bile, "Ben şu an kod düzeltme aşamasındayım" state'ini hatırlar.
+
+---
+
+## ❓ Sıkça Sorulan Sorular (SSS)
+
+**S: Neden AI Agent yazmak için LangChain veya Autogen yerine MCP kullanıyoruz?**
+**C:** MCP bir framework değil, açık bir protokoldür. LangChain ile MCP birbirinin rakibi değildir. Siz MCP kurallarına göre bir sunucu yazdığınızda; Claude Desktop, Cursor, LangChain veya AutoGen... hepsi sizin yazdığınız servisi *hiçbir özel entegrasyon veya SDK gerektirmeden* evrensel olarak kullanabilir hale gelir.
+
+**S: Bu kodları üretim ortamında (Production) kullanabilir miyim?**
+**C:** Bu repo bir eğitim atölyesidir. Modül 4'te Güvenlik Sandbox'ı gibi ileri seviye konuları ele almış olsak da, sunucuyu (server) internete veya şirket network'üne açarken IAM rolleri, API kotalandırmaları (rate limiting) ve detaylı loglama gibi ek siber güvenlik katmanlarını kurmanız tavsiye edilir.
+
+**S: Kendi araçlarımı oluşturmak zor mu?**
+**C:** Kesinlikle hayır! Modül 1'deki `hello_mcp.py` dosyasına bakarsanız sadece standart bir Python fonksiyonu yazıp üzerine `@mcp.tool()` dekoratörü eklemenin yeterli olduğunu göreceksiniz. FastMCP arka planda LLM ile yapılacak tüm RPC ağ mesajlaşmasını sizin yerinize halleder.
+
+---
+
 ## 🛠️ Kurulum ve Çalıştırma Rehberi
 
 Projeyi yerel makinenizde (özellikle Linux/Ubuntu veya WSL tabanlı sistemlerde) test etmek için aşağıdaki adımları izleyin:
