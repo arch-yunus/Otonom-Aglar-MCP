@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Modül 1: Test ve Temel Protokol Serverı
+  hello-mcp:
+    build: .
+    command: python src/01_core_mechanics/hello_mcp.py
+
+  # Modül 3: Otonom Web Scraper Sunucusu
+  web-scraper:
+    build: .
+    command: python src/03_web_integrations/web_scraper.py
+    environment:
+      - SCRAPE_TIMEOUT=30
+      - USER_AGENT=Docker-Otonom-Aglar-MCP/1.0
+
+  # Modül 3: GitHub Yöneticisi
+  github-manager:
+    build: .
+    command: python src/03_web_integrations/github_manager.py
+    env_file:
+      - .env
+
+  # Modül 4: Güvenli Korumalı Alan (Sandbox) Sunucusu
+  secure-sandbox:
+    build: .
+    command: python src/04_advanced_agentic_systems/secure_executor.py
+    environment:
+      - MCP_SANDBOX_DIR=/tmp/mcp_sandbox
+
+  # Modül 4: Ajan Hafıza Sunucusu
+  memory-server:
+    build: .
+    command: python src/04_advanced_agentic_systems/memory_server.py
+    volumes:
+      - memory_data:/app/data
+
+volumes:
+  memory_data:

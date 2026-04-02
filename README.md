@@ -161,6 +161,32 @@ npx @modelcontextprotocol/inspector python src/02_local_servers/file_reader/serv
 
 ---
 
+## 🚀 DevOps, Docker ve Otomatik Testler (Enterprise-Grade)
+
+Bu depo sadece bir atölye değil, aynı zamanda üretim (production) standartlarına uygun bir altyapıya sahiptir.
+
+### 🐳 Docker ile Çalıştırma
+Tüm sunucuları izole bir ortamda (kendi makinenizi kirletmeden) çalıştırmak için Docker Compose kullanabilirsiniz:
+```bash
+# Sadece web kazıyıcıyı ayağa kaldırmak için
+docker compose up web-scraper
+
+# Tüm modülleri arka planda çalıştırmak için
+docker compose up -d
+```
+
+### 🧪 Otomatik Testler (Pytest)
+Ajanların güvenliğini (örneğin Sandbox'ın dizin atlatma saldırılarına karşı korumasını) doğrulamak için testler yazılmıştır:
+```bash
+# Testleri çalıştırmak için
+pytest tests/ -v
+```
+
+### ⚙️ Sürekli Entegrasyon (CI/CD)
+GitHub Actions sayesinde, bu depoya push atılan her yeni kod otomatik olarak Ubuntu sunucularında `pytest` testlerinden geçirilir ve Docker Build işlemleri doğrulanır. Süreçleri `.github/workflows/ci.yml` dosyasından inceleyebilirsiniz.
+
+---
+
 ## 📚 Kaynakça ve İleri Okuma
 * [Model Context Protocol Resmi Dokümantasyonu](https://modelcontextprotocol.io)
 * [Anthropic MCP GitHub Organizasyonu](https://github.com/modelcontextprotocol)
