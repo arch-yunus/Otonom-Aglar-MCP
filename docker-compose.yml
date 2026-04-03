@@ -28,12 +28,42 @@ services:
     environment:
       - MCP_SANDBOX_DIR=/tmp/mcp_sandbox
 
-  # Modül 4: Ajan Hafıza Sunucusu
-  memory-server:
+  # Modül 4: Semantik Hafıza (Vector Store) v2
+  semantic-memory:
     build: .
-    command: python src/04_advanced_agentic_systems/memory_server.py
+    command: python src/04_advanced_agentic_systems/semantic_memory_server.py
     volumes:
-      - memory_data:/app/data
+      - semantic_data:/app/data
+    environment:
+      - MCP_SEMANTIC_MEMORY_FILE=/app/data/semantic_memory.json
+
+  # Modül 6: Tam Otonom Ajan (Autonomous Brain)
+  autonomous-brain:
+    build: .
+    command: python src/06_llm_agent/autonomous_brain.py
+    env_file:
+      - .env
+    depends_on:
+      - semantic-memory
+      - web-scraper
+      - github-manager
+
+  # Modül 7: Görsel Ajan Dashboard (Visual Telemetry)
+  gui-dashboard:
+    build: .
+    command: python src/07_gui_dashboard/app.py
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+
+  # Modül 8: Otonom Proje Mimarı (Architect)
+  project-architect:
+    build: .
+    command: python src/08_autonomous_architect/engine.py
+    volumes:
+      - ./projects:/app/projects
 
 volumes:
   memory_data:
+  semantic_data:
