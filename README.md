@@ -47,15 +47,18 @@ sequenceDiagram
 | **📕 Modül 4** | [Advanced Systems](src/04_advanced_agentic_systems) - Memory, Sandbox | ✅ Tamamlandı |
 | **📓 Modül 5** | [Client Interface](src/05_mcp_client_example) - Programmatic Access | ✅ Tamamlandı |
 | **👑 Modül 6** | [Autonomous Brain](src/06_llm_agent) - ReAct, Multi-Server | ✅ Tamamlandı |
+| **🖥️ Modül 7** | [GUI Dashboard](src/07_gui_dashboard) - Real-time Visualization | ✅ Tamamlandı |
+| **🏗️ Modül 8** | [Autonomous Architect](src/08_autonomous_architect) - Project Creator | ✅ Tamamlandı |
 
 ---
 
 ## 🚀 Öne Çıkan Özellikler
 
 *   **🧠 Gerçek ReAct Döngüsü:** Modül 6, Claude 3.5 Sonnet ile "Düşün-Eylem-Gözlem" döngüsünü otonom olarak yöneten sınıfyapısına sahiptir.
-*   **🔗 Çoklu Sunucu Orkestrasyonu:** Tek bir ajan üzerinden aynı anda dosya sistemi, veritabanı ve web tarayıcı araçlarına erişim.
+*   **🔗 Çoklu Sunucu Orkestrasyonu:** Tek bir ajan üzerinden aynı anda dosya sistemi, veritabanı, web tarayıcı ve uzman ajan araçlarına erişim.
 *   **🛡️ Güvenli Sandbox:** `secure_executor` ile dizin atlatma (path traversal) saldırılarına karşı korumalı dosya işlemleri.
-*   **💾 Kalıcı Hafıza:** Ajanın görevler arası durum (state) saklayabilmesi için JSON tabanlı hafıza katmanı.
+*   **💾 Semantik Hafıza v2:** Ajanın geçmişini 'Simple Keyword' yerine gerçek 'Sentence-Transformer' vektörleriyle anlam olarak hatırlamasını sağlayan yapı.
+*   **📡 Visual Telemetry:** Ajanın o an ne düşündüğünü ve hangi araçları çağırdığını anlık izleyebileceğiniz Flask/Socket.io Dashboard.
 
 ---
 

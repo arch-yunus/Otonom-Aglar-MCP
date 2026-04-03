@@ -22,6 +22,12 @@ run-client: ## Modül 5'teki örnek MCP İstemcisini (Host) test amacıyla çal�
 run-llm: ## Modül 6: Anthropic LLM (ReAct) kullanarak Tam Otonom Ajanı Başlatır
 	python src/06_llm_agent/autonomous_brain.py
 
+dashboard: ## Modül 7: Ajan Düşünce Akışını Visual Dashboard Üzerinden İzle (5000 Portu)
+	python src/07_gui_dashboard/app.py
+
+architect: ## Modül 8: Otonom Proje Mimarı (Architect) Sunucusunu Başlatır
+	python src/08_autonomous_architect/engine.py
+
 doctor: ## Sistemin MCP için hazır olup olmadığını kontrol eder
 	@echo "🔍 Sistem Kontrol Ediliyor..."
 	@python --version
