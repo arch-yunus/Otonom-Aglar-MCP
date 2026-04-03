@@ -14,69 +14,103 @@
 
 ---
 
-## 🏗️ Mimari Ekosistem
+## 🚀 Vizyon ve Felsefe: Agentic Engineering
 
-MCP (Model Context Protocol), yapay zeka modelleri ile veri kaynakları arasında evrensel bir köprü kurar. Bu repoda uygulanan mimari şu şekildedir:
+Modern yapay zeka artık sadece "cevap vermek" ile yetinmiyor; artık **aksiyon alıyor**. **Otonom-Ağlar-MCP**, basit bir kütüphane değil, modellerin gerçek dünya ile (dosya sistemleri, veritabanları, web tarayıcılar ve diğer ajanlar) nasıl güvenli ve otonom bir şekilde etkileşime gireceğini gösteren uçtan uca bir laboratuvardır.
+
+Bu repo, Anthropic'in **Model Context Protocol (MCP)** standardını kullanarak, bir yapay zekanın "Eyleme Geçme" (Action-Oriented) yeteneklerini en üst seviyeye taşır.
+
+---
+
+## 🏗️ Mimari Ekosistem ve Topoloji
+
+Proje, 8 modülden oluşan devasa bir **Ajan Ağı (Agent Network)** topolojisine sahiptir. Master Brain (Ajanın Beyni), bu ağdaki sunucuları tıpkı bir orkestra şefi gibi yönetir.
 
 ```mermaid
-sequenceDiagram
-    participant U as Kullanıcı
-    participant B as Autonomous Brain (Modül 6)
-    participant C as MCP Client
-    participant S as MCP Servers (SQLite, Web, File)
+graph TD
+    User([👤 Kullanıcı]) --> Master[🧠 Autonomous Brain - Modül 6]
     
-    U->>B: "README'yi oku ve analiz et"
-    B->>B: Düşünce (Thought)
-    B->>C: call_tool("read_file")
-    C->>S: stdio/JSON-RPC Request
-    S-->>C: File Content
-    C-->>B: Gözlem (Observation)
-    B->>B: Düşünce (Sonucu Değerlendir)
-    B->>U: Final Yanıt
+    subgraph "🛠️ MCP Toolset (Sunucular)"
+        Master --> FS[📂 File System - Modül 2]
+        Master --> DB[🗄️ SQLite - Modül 2]
+        Master --> Web[🌐 Web Scraper - Modül 3/8]
+        Master --> GH[🐙 GitHub - Modül 3]
+        Master --> Mem[🧠 Semantic Memory - Modül 4]
+        Master --> Sandbox[🛡️ Secure Executor - Modül 4]
+        Master --> Sub[🤖 Specialist Agent - Modül 7]
+    end
+
+    subgraph "📊 İzleme & Telemetri"
+        Master -.-> Dash[🖥️ Visual Dashboard - Modül 7]
+    end
+
+    style Master fill:#8b5cf6,stroke:#fff,color:#fff
+    style Dash fill:#0f172a,stroke:#3b82f6,color:#fff
 ```
 
 ---
 
-## 🗺️ Geliştirme Yol Haritası (Enhanced)
+## 🗺️ Geliştirme Yol Haritası ve Modül Detayları
 
-| Modül | Kapsam | Durum |
+| Modül | Kapsam | Teknik Detay |
 | :--- | :--- | :--- |
-| **📗 Modül 1** | [Core Mechanics](src/01_core_mechanics) - JSON-RPC, Lifecycle | ✅ Tamamlandı |
-| **📘 Modül 2** | [Local Interaction](src/02_local_servers) - SQLite, File System | ✅ Tamamlandı |
-| **📙 Modül 3** | [Web Integrations](src/03_web_integrations) - Scraper, GitHub | ✅ Tamamlandı |
-| **📕 Modül 4** | [Advanced Systems](src/04_advanced_agentic_systems) - Memory, Sandbox | ✅ Tamamlandı |
-| **📓 Modül 5** | [Client Interface](src/05_mcp_client_example) - Programmatic Access | ✅ Tamamlandı |
-| **👑 Modül 6** | [Autonomous Brain](src/06_llm_agent) - ReAct, Multi-Server | ✅ Tamamlandı |
-| **🖥️ Modül 7** | [GUI Dashboard](src/07_gui_dashboard) - Real-time Visualization | ✅ Tamamlandı |
-| **🏗️ Modül 8** | [Autonomous Architect](src/08_autonomous_architect) - Project Creator | ✅ Tamamlandı |
+| **📗 Modül 1** | **Core Mechanics** | JSON-RPC protokolü, yaşam döngüsü yönetimi ve `FastMCP` temelleri. |
+| **📘 Modül 2** | **Local Interaction** | SQLite veritabanı sorgulama ve güvenli dosya okuma/yazma araçları. |
+| **📙 Modül 3** | **Web & API** | GitHub Issue yönetimi ve Playwright tabanlı dinamik web rendering. |
+| **📕 Modül 4** | **Advanced Systems** | `Sentence-Transformers` tabanlı semantik hafıza ve RAG (Retrieval-Augmented Generation). |
+| **📓 Modül 5** | **Client Interface** | Sunucuları programatik olarak kontrol eden özel MCP Host implementasyonu. |
+| **👑 Modül 6** | **Autonomous Brain** | Anthropic ReAct (Thought-Action-Observation) otonom döngüsü. |
+| **🖥️ Modül 7** | **Visual Dashboard** | Flask & Socket.io ile ajanın düşünce zincirini anlık izleyen GUI. |
+| **🏗️ Modül 8** | **Autonomous Architect** | Kendi kendine dosya yapısı kuran ve hataları düzelten 'Engineer' ajanı. |
 
 ---
 
-## 🚀 Öne Çıkan Özellikler
+## 🌟 Öne Çıkan Mühendislik Desenleri
 
-*   **🧠 Gerçek ReAct Döngüsü:** Modül 6, Claude 3.5 Sonnet ile "Düşün-Eylem-Gözlem" döngüsünü otonom olarak yöneten sınıfyapısına sahiptir.
-*   **🔗 Çoklu Sunucu Orkestrasyonu:** Tek bir ajan üzerinden aynı anda dosya sistemi, veritabanı, web tarayıcı ve uzman ajan araçlarına erişim.
-*   **🛡️ Güvenli Sandbox:** `secure_executor` ile dizin atlatma (path traversal) saldırılarına karşı korumalı dosya işlemleri.
-*   **💾 Semantik Hafıza v2:** Ajanın geçmişini 'Simple Keyword' yerine gerçek 'Sentence-Transformer' vektörleriyle anlam olarak hatırlamasını sağlayan yapı.
-*   **📡 Visual Telemetry:** Ajanın o an ne düşündüğünü ve hangi araçları çağırdığını anlık izleyebileceğiniz Flask/Socket.io Dashboard.
+### 1. ReAct (Reason-Act) Döngüsü
+Ajan, kendisine verilen görevi parçalara böler. Her adımda:
+- **Thought (Düşünce):** Mevcut durumu analiz eder.
+- **Action (Eylem):** MCP araçlarından birini seçer (örn: `search_knowledge`).
+- **Observation (Gözlem):** Aracın döndüğü sonucu değerlendirip bir sonraki adıma geçer.
+
+### 2. Semantik Hafıza (Vector RAG)
+Modül 4, ajanın geçmişteki tüm etkileşimlerini bir vektör veritabanında (`semantic_memory.json`) saklar. Bir soru sorulduğunda, ajan sadece kelime eşlemesi yapmaz, **anlamsal benzerlik** kurarak en alakalı anılarını hatırlar.
+
+### 3. Recursive Delegation (Ajan-Ajan İletişimi)
+Beyin, bir dosyada karmaşık bir hata bulduğunda, bu işi Modül 7'deki **"Uzman Kod Analisti"** alt-ajanına devreder. Bu, dünyadaki ilk "Recursive MCP" örneklerinden biridir.
 
 ---
 
-## 🛠️ Hızlı Başlangıç (Developer Guide)
+## 🛠️ Kurulum ve Monitorizasyon
 
+### Hızlı Başlangıç
 ```bash
-# 1. Ortamı Hazırlayın
+# 1. Bağımlılıkları Yükle ve Sistemi Kontrol Et
 make dev
 
-# 2. Testleri Çalıştırın
-make test
+# 2. Tarayıcıları Hazırla (Playwright)
+playwright install chromium
 
-# 3. Otonom Ajanı Başlatın
+# 3. Görsel Dashboard'u Başlat
+make dashboard
+```
+
+### Otonom Görev Başlatma
+Yeni bir terminalde:
+```bash
 make run-llm
 ```
 
 > [!IMPORTANT]
-> **API Anahtarı**: Otonom beyin (Modül 6) için `.env` dosyanızda `ANTHROPIC_API_KEY` tanımlı olmalıdır.
+> **API Konfigürasyonu**: Kök dizinde bir `.env` dosyası oluşturun ve şu değişkenleri tanımlayın:
+> - `ANTHROPIC_API_KEY`: Ajanın beyni için.
+> - `GITHUB_TOKEN`: GitHub araçları için.
+
+---
+
+## 🛡️ Güvenlik ve Sandbox Paradigması
+
+Otonom ajanlar "yazma" yetkisine sahip olduğu için, sistemimizde **Strict Directory Validation** protokolü uygulanır. `secure_executor.py` sayesinde ajan, sizin belirttiğiniz `MCP_SANDBOX_DIR` dışına asla çıkamaz ve sistem dosyalarınıza zarar veremez.
 
 ---
 
