@@ -1,16 +1,23 @@
-from mcp.server.fastmcp import FastMCP
+import sys
+import os
+
+# Ensure we can import src modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from src.common.utils import create_mcp_server, setup_logging, tool_error_handler
 
 # Modül 1: Temeller ve Protokol Mekaniği
-# Bu sunucu MCP'nin temel yapı taşlarını (Tools, Resources, Prompts) gösterir.
-
-mcp = FastMCP("Öğrenci Dostu MCP Sunucusu")
+setup_logging()
+mcp = create_mcp_server("Öğrenci Dostu MCP Sunucusu")
 
 @mcp.tool()
+@tool_error_handler
 def to_upper(text: str) -> str:
     """Metni büyük harfe çevirir. Protokol testi için basit bir araç."""
     return text.upper()
 
 @mcp.tool()
+@tool_error_handler
 def echo(message: str) -> str:
     """Gelen mesajı geri döndürür. İletişim testi için kullanılır."""
     return f"Sunucu yanıtı: {message}"

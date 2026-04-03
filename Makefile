@@ -1,4 +1,4 @@
-.PHONY: help install test docker-up docker-down clean run-client
+.PHONY: help install test docker-up docker-down clean run-client run-llm doctor dev
 
 help: ## Mevcut Makefile komutlarını listeler
 	@echo "Mevcut Komutlar:"
@@ -21,6 +21,18 @@ run-client: ## Modül 5'teki örnek MCP İstemcisini (Host) test amacıyla çal�
 
 run-llm: ## Modül 6: Anthropic LLM (ReAct) kullanarak Tam Otonom Ajanı Başlatır
 	python src/06_llm_agent/autonomous_brain.py
+
+doctor: ## Sistemin MCP için hazır olup olmadığını kontrol eder
+	@echo "🔍 Sistem Kontrol Ediliyor..."
+	@python --version
+	@pip show mcp-server-fastmcp || echo "❌ mcp-server-fastmcp eksik!"
+	@pip show anthropic || echo "❌ anthropic SDK eksik!"
+	@test -f .env || echo "⚠️ .env dosyası eksik!"
+	@echo "✅ Kontrol tamamlandı."
+
+dev: install doctor test ## Tam geliştirme döngüsünü çalıştırır (Yükle -> Kontrol -> Test)
+	@echo "🚀 Geliştirme ortamı hazır."
+
 clean: ## Logları, önbellek (cache) ve gereksiz dosyaları temizler
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +

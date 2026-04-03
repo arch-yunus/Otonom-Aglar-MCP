@@ -1,6 +1,9 @@
 import os
 import sys
 import asyncio
+import json
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 # Ensure we can import src modules
@@ -9,6 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 # MCP imports
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from src.common.utils import setup_logging
 
 # LLM imports
 try:
@@ -18,100 +22,148 @@ except ImportError:
     sys.exit(1)
 
 load_dotenv()
+logger = setup_logging()
 
-# Modül 6: Tam Otonom Ajan (ReAct Döngüsü)
-# LLM'lerin sadece araçları görmesini değil, "Düşün-Eyleme Geç" 
-# döngüsüyle bu araçları kendi inisiyatifiyle kullanmasını sağlar.
-
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-
-async def run_autonomous_agent():
-    if not ANTHROPIC_API_KEY:
-        print("HATA: ANTHROPIC_API_KEY bulunamadı. Lütfen .env dosyanızı güncelleyin.")
-        return
-
-    # Hedef MCP Sunucumuz
-    server_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "01_core_mechanics", "hello_mcp.py"))
-    server_params = StdioServerParameters(command="python", args=[server_path])
-
-    print("🧠 Düşünen Ajan (Autonomous Brain) Başlatılıyor...\n")
+class AutonomousAgent:
+    """
+    Model Context Protocol (MCP) üzerinden dış dünya ile konuşan,
+    Düşün-Eyleme Geç (ReAct) döngüsüyle otonom kararlar alan ajan sistemi.
+    """
     
-    # Anthropic Claude API İstemcisi
-    llm_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as mcp_session:
-            await mcp_session.initialize()
+    def __init__(self, model: str = "claude-3-5-sonnet-20241022"):
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY bulunamadı!")
             
-            # Sunucudan araçları alıp Anthropic'in anladığı formata çeviriyoruz
-            tools_response = await mcp_session.list_tools()
+        self.client = anthropic.Anthropic(api_key=self.api_key)
+        self.model = model
+        self.history: List[Dict[str, Any]] = []
+        self.mcp_sessions: List[ClientSession] = []
+        self.available_tools: List[Dict[str, Any]] = []
+        self.exit_stack = asyncio.ExitStack()
+
+    async def connect_to_server(self, server_script: str):
+        """Belirtilen MCP sunucusuna bağlanır ve araçlarını envantere ekler."""
+        params = StdioServerParameters(command="python", args=[server_script])
+        
+        # Async context manager'ları dinamik yönetmek için contextlib kullanıyoruz
+        transport = await self.exit_stack.enter_async_context(stdio_client(params))
+        read, write = transport
+        session = await self.exit_stack.enter_async_context(ClientSession(read, write))
+        
+        await session.initialize()
+        self.mcp_sessions.append(session)
+        
+        # Araçları listele ve Anthropic formatına çevir
+        tools_response = await session.list_tools()
+        for tool in tools_response.tools:
+            self.available_tools.append({
+                "name": tool.name,
+                "description": tool.description or "",
+                "input_schema": tool.inputSchema
+            })
+        
+        logger.info(f"✅ Sunucu Bağlandı: {os.path.basename(server_script)} | Kayıtlı Araç Sayısı: {len(tools_response.tools)}")
+
+    async def _call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+        """İlgili MCP oturumunu bulup aracı çalıştırır."""
+        for session in self.mcp_sessions:
+            # Not: Burada araç isminin benzersiz olduğunu varsayıyoruz (Namespace çakışması kontrolü eklenebilir)
+            try:
+                result = await session.call_tool(name, arguments=arguments)
+                if result and result.content:
+                    return result.content[0].text
+            except Exception:
+                continue
+        return f"HATA: '{name}' aracı hiçbir bağlı sunucuda bulunamadı veya çalışma hatası oluştu."
+
+    async def run(self, task: str, max_steps: int = 10):
+        """Ajanın otonom döngüsünü (ReAct) başlatır."""
+        logger.info(f"\n🚀 GÖREV BAŞLATILDI: {task}\n")
+        self.history = [{"role": "user", "content": task}]
+        
+        step = 0
+        while step < max_steps:
+            step += 1
+            logger.info(f"--- ADIM {step} ---")
             
-            anthropic_tools = []
-            for tool in tools_response.tools:
-                anthropic_tools.append({
-                    "name": tool.name,
-                    "description": tool.description or "",
-                    "input_schema": tool.inputSchema
-                })
-                
-            print(f"🔧 Sunucudan Entegre Edilen Araçlar: {[t['name'] for t in anthropic_tools]}\n")
-            
-            # --- ReAct Döngüsü Başlıyor ---
-            user_prompt = "Merhaba Claude, elimizdeki to_upper aracını kullanarak 'Otonom yapay zeka harikadır' cümlesini büyük harfe çevir ve sonucu bana doğrudan göster."
-            print(f"👤 KULLANICI: {user_prompt}\n")
-            
-            messages = [{"role": "user", "content": user_prompt}]
-            
-            # 1. Aşama: LLM'e araçların listesiyle soruyu sor
-            print("⏳ Ajan Düşünüyor (LLM API Çağrısı)...")
-            response = llm_client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=1024,
-                tools=anthropic_tools,
-                messages=messages
+            # 1. Düşünme Aşaması (LLM'e sor)
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=2048,
+                tools=self.available_tools,
+                messages=self.history
             )
             
-            # 2. Aşama: LLM araç kullanmak istiyor mu?
+            # Yanıtı geçmişe ekle
+            self.history.append({"role": "assistant", "content": response.content})
+            
+            # 2. Eylem Belirleme
             if response.stop_reason == "tool_use":
                 tool_use = next(block for block in response.content if block.type == "tool_use")
-                tool_name = tool_use.name
-                tool_args = tool_use.input
+                logger.info(f"🤖 DÜŞÜNCE: {next((b.text for b in response.content if b.type == 'text'), 'Araç kullanıyorum...')}")
+                logger.info(f"🔧 EYLEM: {tool_use.name}({json.dumps(tool_use.input)})")
                 
-                print(f"🤖 AJAN KARARI: '{tool_name}' aracını kullanmak istiyorum. Parametreler: {tool_args}")
+                # Aracı çalıştır
+                observation = await self._call_tool(tool_use.name, tool_use.input)
+                logger.info(f"⚙️ GÖZLEM: {observation[:200]}..." if len(observation) > 200 else f"⚙️ GÖZLEM: {observation}")
                 
-                # 3. Aşama: Gerçek Eylem (Action) - MCP Üzerinden Python Fonksiyonunu Tetikle
-                mcp_result = await mcp_session.call_tool(tool_name, arguments=tool_args)
-                tool_result_text = mcp_result.content[0].text
-                print(f"⚙️ SUNUCU CIŞTISI (Execution Result): {tool_result_text}")
-                
-                # 4. Aşama: Sonucu alıp LLM'e geri besle ve final yanıtını iste
-                messages.append(
-                    {"role": "assistant", "content": response.content}
-                )
-                messages.append(
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": tool_use.id,
-                                "content": tool_result_text,
-                            }
-                        ],
-                    }
-                )
-                
-                print("\n⏳ Ajan Çıktıyı Değerlendirip Final Cevabını Üretiyor...")
-                final_response = llm_client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=1024,
-                    tools=anthropic_tools,
-                    messages=messages
-                )
-                
-                print(f"\n🧠 AJANIN FİNAL YANITI:\n{final_response.content[0].text}")
+                # Gözlemi LLM'e geri besle
+                self.history.append({
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_use.id,
+                            "content": observation,
+                        }
+                    ],
+                })
             else:
-                print(f"\n🧠 AJANIN YANITI (Araç kullanmaya gerek kalmadı):\n{response.content[0].text}")
+                # Döngü bitti (Final yanıt)
+                final_text = response.content[0].text
+                logger.info(f"\n🏁 AJANIN FİNAL CEVABI:\n{final_text}\n")
+                return final_text
+                
+        logger.warning("⚠️ Maksimum adım sayısına ulaşıldı.")
+        return "Görev tamamlanamadı (Max Steps)."
+
+    async def shutdown(self):
+        """Bağlantıları güvenle kapatır."""
+        await self.exit_stack.aclose()
+        logger.info("🔌 Tüm MCP bağlantıları kapatıldı.")
+
+async def main():
+    agent = AutonomousAgent()
+    
+    # Tüm modüllerdeki sunucuları bağla (Orkestrasyon örneği)
+    base_src = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    servers = [
+        os.path.join(base_src, "01_core_mechanics", "hello_mcp.py"),
+        os.path.join(base_src, "02_local_servers", "file_system_server.py"),
+        os.path.join(base_src, "02_local_servers", "sqlite_server.py"),
+        os.path.join(base_src, "03_web_integrations", "web_scraper.py"),
+        os.path.join(base_src, "04_advanced_agentic_systems", "memory_server.py")
+    ]
+    
+    try:
+        for s in servers:
+            if os.path.exists(s):
+                await agent.connect_to_server(s)
+        
+        # Test Senaryosu: Karmaşık bir görev veriyoruz
+        demo_task = (
+            "1. 'mcp_test' adında bir veritabanı oluştur (veya SQLite araçlarını kullan).\n"
+            "2. Yerel dizindeki README.md dosyasını oku.\n"
+            "3. Dosyadaki vizyon bölümünü büyük harfe çevir.\n"
+            "4. Ajan hafızasına 'README analizi yapıldı' notunu ekle.\n"
+            "Hepsini otonom olarak yap ve sonucu raporla."
+        )
+        
+        await agent.run(demo_task)
+        
+    finally:
+        await agent.shutdown()
 
 if __name__ == "__main__":
-    asyncio.run(run_autonomous_agent())
+    asyncio.run(main())

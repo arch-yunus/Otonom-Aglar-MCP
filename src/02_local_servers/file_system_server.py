@@ -1,43 +1,41 @@
 import os
-from mcp.server.fastmcp import FastMCP
+import sys
+
+# Ensure we can import src modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from src.common.utils import create_mcp_server, setup_logging, tool_error_handler
 
 # Modül 2: Yerel Sunucular - Dosya Sistemi Sunucusu
-# Bu sunucu bilgisayarınızdaki dosyalara LLM'in güvenli erişimini sağlar.
-
-mcp = FastMCP("Dosya Sistemi Sunucusu")
+setup_logging()
+mcp = create_mcp_server("Dosya Sistemi Sunucusu")
 
 @mcp.tool()
+@tool_error_handler
 def list_directory(path: str = ".") -> list[str]:
     """Belirtilen dizindeki dosyaları ve klasörleri listeler."""
-    try:
-        return os.listdir(path)
-    except Exception as e:
-        return [f"Hata: {str(e)}"]
+    return os.listdir(path)
 
 @mcp.tool()
+@tool_error_handler
 def read_file(path: str) -> str:
     """Belirtilen dosyanın içeriğini okur."""
     if not os.path.isfile(path):
         return f"Hata: {path} bir dosya değil."
     
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    except Exception as e:
-        return f"Hata: Dosya okunurken sorun oluştu: {str(e)}"
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 @mcp.tool()
+@tool_error_handler
 def get_file_stats(path: str) -> dict:
     """Dosya hakkında boyut ve değiştirilme zamanı gibi bilgileri döner."""
-    try:
-        stats = os.stat(path)
-        return {
-            "size_bytes": stats.st_size,
-            "modified_at": stats.st_mtime,
-            "is_directory": os.path.isdir(path)
-        }
-    except Exception as e:
-        return {"error": str(e)}
+    stats = os.stat(path)
+    return {
+        "size_bytes": stats.st_size,
+        "modified_at": stats.st_mtime,
+        "is_directory": os.path.isdir(path)
+    }
 
 @mcp.resource("file://{path}")
 def file_resource(path: str) -> str:

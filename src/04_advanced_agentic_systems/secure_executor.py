@@ -1,15 +1,19 @@
 import os
+import sys
 from pathlib import Path
-from mcp.server.fastmcp import FastMCP
+
+# Ensure we can import src modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+from src.common.utils import create_mcp_server, setup_logging, tool_error_handler
 
 # Modül 4: İleri Seviye Sistemler - Güvenli Korumalı Alan (Sandbox) Sunucusu
-# LLM'lerin sadece belirli bir dizinde güvenle çalışmasını sağlar.
-
-mcp = FastMCP("Güvenli Korumalı Alan (Sandbox)")
+setup_logging()
+mcp = create_mcp_server("Güvenli Korumalı Alan (Sandbox)")
 
 # Sadece bu dizin içinde işlem yapılabilir (Sandbox Root)
 # Güvenlik için ortam değişkeninden alınır, yoksa güvenli temp kullanılır.
-SANDBOX_DIR = os.getenv("MCP_SANDBOX_DIR", "/tmp/mcp_sandbox")
+SANDBOX_DIR = os.getenv("MCP_SANDBOX_DIR", os.path.join(os.getcwd(), "mcp_sandbox"))
 
 def is_safe_path(requested_path: str) -> bool:
     """Path Traversal (Dizin Atlama) saldırılarını engeller."""
@@ -26,35 +30,49 @@ def is_safe_path(requested_path: str) -> bool:
         return False
 
 @mcp.tool()
+@tool_error_handler
 def init_sandbox() -> str:
     """Korumalı alanı (Sandbox) başlatır ve dizini oluşturur."""
     os.makedirs(SANDBOX_DIR, exist_ok=True)
     return f"Sandbox hazırlandı: {SANDBOX_DIR}. Artık güvenle dosya yazabilirsiniz."
 
 @mcp.tool()
+@tool_error_handler
 def secure_write_file(filename: str, content: str) -> str:
     """
     SADECE korumalı alan içine (Sandbox) dosya yazar. 
-    Kritik sistem dosyaları (örn: ../../etc/passwd) değiştirilemez.
+    Kritik sistem dosyaları değiştirilemez.
     """
     if not is_safe_path(filename):
         return "GÜVENLİK İHLALİ (Path Traversal): Sandbox dışına yazamazsınız!"
     
     target_path = Path(SANDBOX_DIR) / filename
-    try:
-        # Alt dizinler gerekiyorsa oluştur
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(target_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        return f"BAŞARILI: {filename} sandbox içine güvenle kaydedildi."
-    except Exception as e:
-        return f"HATA: {str(e)}"
+    # Alt dizinler gerekiyorsa oluştur
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"BAŞARILI: {filename} sandbox içine güvenle kaydedildi."
 
 @mcp.tool()
+@tool_error_handler
+def secure_read_file(filename: str) -> str:
+    """SADECE korumalı alan içindeki (Sandbox) dosyaları okur."""
+    if not is_safe_path(filename):
+        return "GÜVENLİK İHLALİ: Sandbox dışını okuyamazsınız!"
+    
+    target_path = Path(SANDBOX_DIR) / filename
+    if not target_path.exists():
+        return f"HATA: Dosya bulunamadı: {filename}"
+        
+    with open(target_path, "r", encoding="utf-8") as f:
+        return f.read()
+
+@mcp.tool()
+@tool_error_handler
 def secure_list_sandbox() -> list[str]:
     """Sandbox (Korumalı alan) içindeki dosyaları listeler."""
     if not os.path.exists(SANDBOX_DIR):
-         return ["Sandbox boş veya oluşturulmamış."]
+         os.makedirs(SANDBOX_DIR, exist_ok=True)
     return os.listdir(SANDBOX_DIR)
 
 if __name__ == "__main__":
