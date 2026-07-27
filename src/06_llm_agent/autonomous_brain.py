@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
+import httpx
 
 # Ensure we can import src modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -30,7 +31,7 @@ class AutonomousAgent:
     Düşün-Eyleme Geç (ReAct) döngüsüyle otonom kararlar alan ajan sistemi.
     """
     
-    def __init__(self, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, model: str = "claude-3-5-sonnet-20241022", log_callback: Optional[Any] = None):
         self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY bulunamadı!")
@@ -41,6 +42,34 @@ class AutonomousAgent:
         self.mcp_sessions: List[ClientSession] = []
         self.available_tools: List[Dict[str, Any]] = []
         self.exit_stack = asyncio.ExitStack()
+        self.log_callback = log_callback
+
+    async def emit_log(self, log_type: str, message: str):
+        """Log basar, varsa callback'e iletir ve HTTP ile Dashboard'a gönderir."""
+        if log_type == "Success":
+            logger.info(f"✅ {message}")
+        elif log_type == "Error":
+            logger.error(f"❌ {message}")
+        elif log_type == "Warning":
+            logger.warning(f"⚠️ {message}")
+        else:
+            logger.info(f"[{log_type}] {message}")
+
+        if self.log_callback:
+            try:
+                self.log_callback(log_type, message)
+            except Exception as e:
+                logger.error(f"Callback hatası: {e}")
+
+        # Dashboard'a HTTP POST olarak gönder (Arka planda çalışıyor olabilir)
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post("http://localhost:5000/api/log", json={
+                    "type": log_type,
+                    "message": message
+                }, timeout=1.0)
+        except Exception:
+            pass # Dashboard açık olmayabilir, sessizce geç
 
     async def connect_to_server(self, server_script: str):
         """Belirtilen MCP sunucusuna bağlanır ve araçlarını envantere ekler."""
@@ -63,7 +92,7 @@ class AutonomousAgent:
                 "input_schema": tool.inputSchema
             })
         
-        logger.info(f"✅ Sunucu Bağlandı: {os.path.basename(server_script)} | Kayıtlı Araç Sayısı: {len(tools_response.tools)}")
+        await self.emit_log("Info", f"Sunucu Bağlandı: {os.path.basename(server_script)} | Kayıtlı Araç: {len(tools_response.tools)}")
 
     async def _call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
         """İlgili MCP oturumunu bulup aracı çalıştırır."""
@@ -79,13 +108,13 @@ class AutonomousAgent:
 
     async def run(self, task: str, max_steps: int = 10):
         """Ajanın otonom döngüsünü (ReAct) başlatır."""
-        logger.info(f"\n🚀 GÖREV BAŞLATILDI: {task}\n")
+        await self.emit_log("Info", f"GÖREV BAŞLATILDI: {task}")
         self.history = [{"role": "user", "content": task}]
         
         step = 0
         while step < max_steps:
             step += 1
-            logger.info(f"--- ADIM {step} ---")
+            await self.emit_log("Info", f"Adım {step} / {max_steps} işleniyor...")
             
             # 1. Düşünme Aşaması (LLM'e sor)
             response = self.client.messages.create(
@@ -101,12 +130,13 @@ class AutonomousAgent:
             # 2. Eylem Belirleme
             if response.stop_reason == "tool_use":
                 tool_use = next(block for block in response.content if block.type == "tool_use")
-                logger.info(f"🤖 DÜŞÜNCE: {next((b.text for b in response.content if b.type == 'text'), 'Araç kullanıyorum...')}")
-                logger.info(f"🔧 EYLEM: {tool_use.name}({json.dumps(tool_use.input)})")
+                thought = next((b.text for b in response.content if b.type == 'text'), 'Araç kullanıyorum...')
+                await self.emit_log("Thought", thought)
+                await self.emit_log("Action", f"Araç Çağrısı: {tool_use.name}({json.dumps(tool_use.input)})")
                 
                 # Aracı çalıştır
                 observation = await self._call_tool(tool_use.name, tool_use.input)
-                logger.info(f"⚙️ GÖZLEM: {observation[:200]}..." if len(observation) > 200 else f"⚙️ GÖZLEM: {observation}")
+                await self.emit_log("Observation", observation)
                 
                 # Gözlemi LLM'e geri besle
                 self.history.append({
@@ -122,21 +152,20 @@ class AutonomousAgent:
             else:
                 # Döngü bitti (Final yanıt)
                 final_text = response.content[0].text
-                logger.info(f"\n🏁 AJANIN FİNAL CEVABI:\n{final_text}\n")
+                await self.emit_log("Success", f"Ajanın Final Cevabı:\n{final_text}")
                 return final_text
                 
-        logger.warning("⚠️ Maksimum adım sayısına ulaşıldı.")
+        await self.emit_log("Warning", "Maksimum adım sayısına ulaşıldı.")
         return "Görev tamamlanamadı (Max Steps)."
 
     async def shutdown(self):
         """Bağlantıları güvenle kapatır."""
         await self.exit_stack.aclose()
-        logger.info("🔌 Tüm MCP bağlantıları kapatıldı.")
+        await self.emit_log("Info", "Tüm MCP bağlantıları kapatıldı.")
 
-async def main():
-    agent = AutonomousAgent()
-    
-    # Tüm modüllerdeki sunucuları bağla (Orkestrasyon örneği)
+async def run_agent_workflow(task: str, model: str = "claude-3-5-sonnet-20241022", log_callback: Optional[Any] = None):
+    """Ajanın sunucularını bağlar, görevi çalıştırır ve temizlik yapar."""
+    agent = AutonomousAgent(model=model, log_callback=log_callback)
     base_src = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     servers = [
         os.path.join(base_src, "01_core_mechanics", "hello_mcp.py"),
@@ -151,19 +180,24 @@ async def main():
             if os.path.exists(s):
                 await agent.connect_to_server(s)
         
-        # Test Senaryosu: Karmaşık bir görev veriyoruz
-        demo_task = (
-            "1. 'mcp_test' adında bir veritabanı oluştur (veya SQLite araçlarını kullan).\n"
-            "2. Yerel dizindeki README.md dosyasını oku.\n"
-            "3. Dosyadaki vizyon bölümünü büyük harfe çevir.\n"
-            "4. Ajan hafızasına 'README analizi yapıldı' notunu ekle.\n"
-            "Hepsini otonom olarak yap ve sonucu raporla."
-        )
-        
-        await agent.run(demo_task)
-        
+        result = await agent.run(task)
+        return result
+    except Exception as e:
+        await agent.emit_log("Error", f"Ajan yürütme hatası: {str(e)}")
+        return f"HATA: {str(e)}"
     finally:
         await agent.shutdown()
+
+async def main():
+    # Test Senaryosu: Terminal üzerinden çalıştırma
+    demo_task = (
+        "1. 'mcp_test' adında bir veritabanı oluştur (veya SQLite araçlarını kullan).\n"
+        "2. Yerel dizindeki README.md dosyasını oku.\n"
+        "3. Dosyadaki vizyon bölümünü büyük harfe çevir.\n"
+        "4. Ajan hafızasına 'README analizi yapıldı' notunu ekle.\n"
+        "Hepsini otonom olarak yap ve sonucu raporla."
+    )
+    await run_agent_workflow(demo_task)
 
 if __name__ == "__main__":
     asyncio.run(main())

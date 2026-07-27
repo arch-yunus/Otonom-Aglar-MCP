@@ -7,84 +7,418 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
-        body { font-family: 'Outfit', sans-serif; background: #0f172a; color: #f8fafc; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(148, 163, 184, 0.1); }
-        .thought-card { border-left: 4px solid #8b5cf6; padding-left: 1rem; margin-bottom: 1rem; animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%);
+            color: #f8fafc; 
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .glass { 
+            background: rgba(15, 23, 42, 0.65); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid rgba(99, 102, 241, 0.15); 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .glass-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-hover:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 40px 0 rgba(99, 102, 241, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .thought-card { 
+            animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; 
+        }
+        
+        @keyframes slideIn { 
+            from { opacity: 0; transform: translateY(15px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
     </style>
 </head>
-<body class="min-h-screen">
-    <div class="container mx-auto p-6">
+<body class="min-h-screen pb-12">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <!-- Header -->
-        <header class="flex justify-between items-center mb-8 glass p-6 rounded-2xl shadow-2xl">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 glass p-6 rounded-2xl border border-indigo-500/20 shadow-lg gap-4">
             <div>
-                <h1 class="text-3xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-indigo-400">
+                <h1 class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 tracking-tight">
                     Otonom-Ağlar MCP Dashboard
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Gerçek Zamanlı Ajan Telemetrisi v2.0</p>
+                <p class="text-indigo-200/60 text-sm mt-1 font-medium tracking-wide">
+                    🤖 Gerçek Zamanlı Ajan Düşünce & Karar Telemetrisi v2.5
+                </p>
             </div>
-            <div id="status" class="flex items-center space-x-2">
-                <span class="relative flex h-3 w-3">
+            
+            <div id="system-status-badge" class="flex items-center space-x-3 bg-slate-900/80 px-4 py-2 rounded-xl border border-emerald-500/30">
+                <span class="relative flex h-3.5 w-3.5">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
                 </span>
-                <span class="text-emerald-400 font-medium tracking-wide">AKTİF</span>
+                <span class="text-emerald-400 font-semibold text-sm tracking-wider uppercase" id="connection-status-text">SİSTEM CANLI</span>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Left: Topoloji & Sunucular -->
-            <div class="lg:col-span-1 space-y-6">
-                <div class="glass p-6 rounded-2xl">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Aktif Protokol Ağı
+        <!-- Main Workspace Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Panel: Control Box & Server Status (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Task Launcher Card -->
+                <div class="glass p-6 rounded-2xl border border-indigo-500/20 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                    
+                    <h2 class="text-xl font-semibold mb-4 flex items-center text-indigo-300">
+                        <svg class="w-5 h-5 mr-2 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Otonom Görev Çalıştırıcı
                     </h2>
-                    <ul class="space-y-3" id="server-list">
-                        <li class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                            <span>SQLite Database</span>
-                            <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">BAĞLI</span>
-                        </li>
-                        <li class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 text-slate-500">
-                            <span>Playwright Browser</span>
-                            <span class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">BEKLEMEDE</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Right: Thought Feed -->
-            <div class="lg:col-span-2">
-                <div class="glass p-6 rounded-2xl min-h-[600px] flex flex-col">
-                    <h2 class="text-lg font-semibold mb-6 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                        Ajan Düşünce Akışı (Live Thoughts)
-                    </h2>
-                    <div id="logs" class="flex-grow space-y-4 overflow-y-auto" style="max-height: 500px;">
-                        <!-- Logs here -->
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Görev Açıklaması</label>
+                            <textarea id="task-input" rows="4" 
+                                class="w-full bg-slate-900/90 text-slate-100 placeholder-slate-500 border border-slate-700/60 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+                                placeholder="Ajanın gerçekleştirmesini istediğiniz görevi yazın... Örn: README.md dosyasındaki vizyon kısmını oku ve bana özetle."></textarea>
+                        </div>
+                        
+                        <button id="run-btn" onclick="submitTask()" 
+                            class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center space-x-2 text-sm">
+                            <span>Görevi Ajan'a Gönder</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
                     </div>
                 </div>
+
+                <!-- API Key Status and Warning -->
+                <div id="key-warning-card" class="hidden glass p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-amber-400 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        <div>
+                            <h3 class="text-sm font-semibold text-amber-300">ANTHROPIC_API_KEY Eksik!</h3>
+                            <p class="text-xs text-amber-200/70 mt-1 leading-relaxed">
+                                Ajanın çalışabilmesi için geçerli bir API anahtarı ayarlanmamış. Lütfen projenin kök dizininde bir <code class="bg-slate-900 px-1 py-0.5 rounded text-indigo-300">.env</code> dosyası oluşturup içine anahtarınızı ekleyin.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Topology Card -->
+                <div class="glass p-6 rounded-2xl border border-indigo-500/20">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center text-indigo-300">
+                        <svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        Aktif Protokol Sunucuları
+                    </h2>
+                    
+                    <div class="space-y-3" id="server-list">
+                        <!-- SQLite -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                <span class="text-sm font-medium">SQLite Database Server</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">AKTİF</span>
+                        </div>
+                        <!-- File System -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                <span class="text-sm font-medium">File System Server</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">AKTİF</span>
+                        </div>
+                        <!-- Web Scraper -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                <span class="text-sm font-medium">Web Scraper Server</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">AKTİF</span>
+                        </div>
+                        <!-- Memory Server -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                <span class="text-sm font-medium">Semantic Memory Server</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">AKTİF</span>
+                        </div>
+                        <!-- Hello MCP -->
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                            <div class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                <span class="text-sm font-medium">Core Mechanics (Hello)</span>
+                            </div>
+                            <span class="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">AKTİF</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- Right Panel: Thought Feed (8 cols) -->
+            <div class="lg:col-span-8">
+                <div class="glass p-6 rounded-2xl min-h-[600px] flex flex-col border border-indigo-500/20 shadow-xl relative overflow-hidden">
+                    
+                    <!-- Feed Header -->
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+                        <h2 class="text-xl font-semibold flex items-center text-indigo-300">
+                            <svg class="w-6 h-6 mr-2 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            Canlı Düşünce Akışı (Thought Feed)
+                        </h2>
+                        
+                        <div class="flex items-center space-x-2">
+                            <button onclick="clearLogs()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">
+                                Temizle
+                            </button>
+                            <label class="flex items-center space-x-2 cursor-pointer bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700/80 text-xs font-medium text-slate-300">
+                                <input type="checkbox" id="auto-scroll" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900">
+                                <span>Oto Kaydır</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Logs Feed Container -->
+                    <div id="logs-container" class="flex-grow space-y-4 overflow-y-auto pr-1 max-h-[500px]" style="min-height: 450px;">
+                        <!-- Logs inject here -->
+                    </div>
+                    
+                </div>
+            </div>
+            
         </div>
     </div>
 
     <script>
         const socket = io();
-        const logsContainer = document.getElementById('logs');
+        const logsContainer = document.getElementById('logs-container');
+        const autoScrollCheckbox = document.getElementById('auto-scroll');
+        const runBtn = document.getElementById('run-btn');
+        const taskInput = document.getElementById('task-input');
+        const keyWarning = document.getElementById('key-warning-card');
 
-        socket.on('new_log', function(log) {
-            const entry = document.createElement('div');
-            entry.className = 'thought-card glass border-l-4 border-violet-500 p-4 transition-all hover:bg-slate-800/80';
-            entry.innerHTML = `
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-semibold text-violet-400 tracking-wider">${log.type.toUpperCase()}</span>
-                    <span class="text-[10px] text-slate-500">${log.time}</span>
+        // Check backend configuration status
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                if (data.api_key_status === 'missing_key') {
+                    keyWarning.classList.remove('hidden');
+                } else {
+                    keyWarning.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Status check failed", err);
+            }
+        }
+        checkStatus();
+
+        // Clear local logs on view
+        function clearLogs() {
+            logsContainer.innerHTML = `
+                <div class="text-center py-8 text-slate-500 text-sm">
+                    Akış temizlendi. Ajan aktiviteleri burada belirecektir.
                 </div>
-                <p class="text-slate-200">${log.message}</p>
             `;
-            logsContainer.prepend(entry);
+        }
+
+        // Helper to get CSS classes based on log type
+        function getLogStyle(type) {
+            switch(type.toLowerCase()) {
+                case 'thought':
+                    return {
+                        border: 'border-l-4 border-violet-500',
+                        bg: 'bg-violet-950/20',
+                        text: 'text-violet-300',
+                        badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                        title: '🤖 AJAN DÜŞÜNCESİ'
+                    };
+                case 'action':
+                    return {
+                        border: 'border-l-4 border-indigo-500',
+                        bg: 'bg-indigo-950/20',
+                        text: 'text-indigo-300 code-font text-xs',
+                        badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                        title: '🔧 ARAÇ EYLEMİ'
+                    };
+                case 'observation':
+                    return {
+                        border: 'border-l-4 border-amber-500',
+                        bg: 'bg-amber-950/15',
+                        text: 'text-slate-300 text-xs max-h-48 overflow-y-auto code-font',
+                        badge: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                        title: '⚙️ ARAÇ GÖZLEMİ'
+                    };
+                case 'success':
+                    return {
+                        border: 'border-l-4 border-emerald-500',
+                        bg: 'bg-emerald-950/20',
+                        text: 'text-slate-100 font-medium',
+                        badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                        title: '🏁 AJAN FİNAL CEVABI'
+                    };
+                case 'error':
+                    return {
+                        border: 'border-l-4 border-rose-500',
+                        bg: 'bg-rose-950/20',
+                        text: 'text-rose-200 font-semibold',
+                        badge: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                        title: '❌ SİSTEM HATASI'
+                    };
+                case 'warning':
+                    return {
+                        border: 'border-l-4 border-yellow-500',
+                        bg: 'bg-yellow-950/20',
+                        text: 'text-yellow-200',
+                        badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+                        title: '⚠️ UYARI'
+                    };
+                default:
+                    return {
+                        border: 'border-l-4 border-blue-500',
+                        bg: 'bg-slate-900/60',
+                        text: 'text-slate-300',
+                        badge: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                        title: 'ℹ️ BİLGİ'
+                    };
+            }
+        }
+
+        // Render incoming log items
+        socket.on('new_log', function(log) {
+            // Remove clear logs reminder if present
+            if (logsContainer.innerHTML.includes("Akış temizlendi")) {
+                logsContainer.innerHTML = "";
+            }
+
+            const style = getLogStyle(log.type);
+            const entry = document.createElement('div');
+            entry.className = `thought-card glass p-4 rounded-xl ${style.border} ${style.bg} transition-all hover:bg-slate-800/20 flex flex-col space-y-2`;
+            
+            // Format observation content slightly if long or json-like
+            let formattedMsg = log.message;
+            if (log.type.toLowerCase() === 'observation' && formattedMsg.length > 300) {
+                // Render as code snippet block
+                formattedMsg = `<pre class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 overflow-x-auto text-[11px] whitespace-pre-wrap">${escapeHTML(formattedMsg)}</pre>`;
+            } else if (log.type.toLowerCase() === 'action') {
+                formattedMsg = `<code class="bg-slate-950/80 px-2 py-1.5 rounded-lg border border-indigo-950/50 block text-[11px] whitespace-pre-wrap">${escapeHTML(formattedMsg)}</code>`;
+            } else {
+                formattedMsg = escapeHTML(formattedMsg).replace(/\n/g, '<br>');
+            }
+
+            entry.innerHTML = `
+                <div class="flex justify-between items-center border-b border-slate-800/40 pb-2">
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded-md border ${style.badge} tracking-wider font-mono">
+                        ${style.title}
+                    </span>
+                    <span class="text-[10px] font-semibold text-slate-500 font-mono">${log.time}</span>
+                </div>
+                <div class="${style.text} leading-relaxed py-1">${formattedMsg}</div>
+            `;
+            
+            logsContainer.appendChild(entry);
+
+            // Trigger buttons reset if Ajan returns final response or finishes with error/warning
+            if (log.type === 'Success' || log.type === 'Error' || log.type === 'Warning' || log.message.includes("kapatıldı")) {
+                resetLaunchButton();
+            }
+
+            // Auto-scroll logic
+            if (autoScrollCheckbox.checked) {
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
         });
+
+        // HTML escaping helper
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Reset the Launch Button text and loading states
+        function resetLaunchButton() {
+            runBtn.disabled = false;
+            runBtn.className = "w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center space-x-2 text-sm";
+            runBtn.innerHTML = `
+                <span>Görevi Ajan'a Gönder</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            `;
+        }
+
+        // Submit task to backend
+        async function submitTask() {
+            const task = taskInput.value.trim();
+            if (!task) {
+                alert("Lütfen önce ajana göndermek için bir görev yazın.");
+                return;
+            }
+
+            // Update UI State to Running
+            runBtn.disabled = true;
+            runBtn.className = "w-full bg-slate-800 text-slate-400 font-semibold py-3 px-4 rounded-xl flex items-center justify-center space-x-2 text-sm cursor-not-allowed border border-slate-700";
+            runBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Ajan Görevi Yürütüyor...</span>
+            `;
+
+            // Append a user local log
+            const localLog = {
+                type: 'Info',
+                message: `Tetiklenen Kullanıcı Görevi: "${task}"`,
+                time: new Date().toLocaleTimeString('tr-TR')
+            };
+            
+            // Trigger API
+            try {
+                const res = await fetch('/api/run_task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: task })
+                });
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    // Reset if call failed directly
+                    alert("Görev başlatılamadı: " + data.message);
+                    resetLaunchButton();
+                }
+            } catch (err) {
+                alert("Sunucu bağlantı hatası.");
+                resetLaunchButton();
+            }
+        }
     </script>
 </body>
 </html>

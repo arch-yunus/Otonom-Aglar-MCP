@@ -15,6 +15,8 @@ mcp = create_mcp_server("SQLite Veritabanı Sunucusu")
 @tool_error_handler
 def execute_query(db_path: str, query: str) -> list[dict]:
     """Belirtilen veritabanında salt okunur SQL sorgusu çalıştırır."""
+    if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+        raise FileNotFoundError(f"Veritabanı dosyası bulunamadı veya geçersiz: {db_path}")
     if not query.strip().upper().startswith("SELECT"):
         return [{"hata": "Güvenlik nedeniyle sadece SELECT sorguları çalıştırılabilir."}]
     
@@ -31,6 +33,8 @@ def execute_query(db_path: str, query: str) -> list[dict]:
 @tool_error_handler
 def list_tables(db_path: str) -> list[str]:
     """Veritabanındaki tablo isimlerini listeler."""
+    if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+        raise FileNotFoundError(f"Veritabanı dosyası bulunamadı veya geçersiz: {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
@@ -42,6 +46,8 @@ def list_tables(db_path: str) -> list[str]:
 @tool_error_handler
 def describe_table(db_path: str, table_name: str) -> list[dict]:
     """Tablo sütunlarını, tiplerini ve null olup olamayacaklarını listeler (PRAGMA table_info)."""
+    if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+        raise FileNotFoundError(f"Veritabanı dosyası bulunamadı veya geçersiz: {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     # SQL injection protection for table_name is tricky with PRAGMA, 
@@ -59,6 +65,8 @@ def describe_table(db_path: str, table_name: str) -> list[dict]:
 @tool_error_handler
 def get_table_schema(db_path: str, table_name: str) -> str:
     """Belirtilen tablonun şemasını (CREATE TABLE ifadesini) döner."""
+    if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+        raise FileNotFoundError(f"Veritabanı dosyası bulunamadı veya geçersiz: {db_path}")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table_name}';")
